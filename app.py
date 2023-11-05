@@ -1,6 +1,6 @@
 import time
 import streamlit as st
-from utils import load_chain
+from utils import load_chain, filterDB
 from sent_analysis import SentimentEvaluator
 import re
 
@@ -16,7 +16,7 @@ st.set_page_config(
 
 # Initialize LLM chain in session_state
 if 'chain' not in st.session_state:
-    st.session_state['chain']= load_chain()
+    st.session_state['chain']= load_chain(None)
     st.session_state['sentiments'] = []
 
 # Initialize chat history
@@ -37,7 +37,9 @@ for message in st.session_state.messages:
 
 # Chat logic
 if query := st.chat_input("Ask me anything"):
-    
+    filtered_indices = filterDB(query)
+    if len(filtered_indices) > 0:
+        st.session_state['chain']= load_chain(filtered_indices)
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": query})
     # Display user message in chat message container

@@ -12,7 +12,7 @@ from langchain.chains import LLMChain
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 @st.cache_resource
-def load_chain():
+def load_chain(filtered_indices=None):
 		"""
         The `load_chain()` function initializes and configures a conversational retrieval chain for
         answering user questions.
@@ -23,9 +23,11 @@ def load_chain():
 		
 		# Load OpenAI chat model
 		llm = ChatOpenAI(temperature=0)
-		
-		# Load our local FAISS index as a retriever
-		vector_store = FAISS.load_local("faiss_index", embeddings)
+		if (filtered_indices):
+			vector_store = filtered_indices
+		else:
+			# Load our local FAISS index as a retriever
+			vector_store = FAISS.load_local("faiss_index", embeddings)
 		## look into search_kwargs parameter
 		retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 		
@@ -67,9 +69,8 @@ opinion of a legislator, you can identify the legislator itself and the topic be
 For instance, a question could be the following:
 "What is Senator Ted Cruz's opinion on abortion?" In this sentece, the legislator would be
 "Senator Ted Cruz", and the topic being addressed would be "abortion". Your answer should be in the
-following format: "{{subject: Ted Cruz, topic: abortion}}".
+following format of a list [subject, topic]. In this case, that would be [Ted Cruz, abortion].
 
-{context}
 Question: {question}
 '''
 	chain = LLMChain.from_string(llm=llm, template=prompt)
@@ -77,8 +78,8 @@ Question: {question}
             "question" : query,
         })
 	answer = response['text']
-	subject = answer['subject']
-	topic = answer['topic']
+	subject = answer[0]
+	topic = answer[1]
 	embeddings = OpenAIEmbeddings()
 	llm = ChatOpenAI(temperature=0)
 		
